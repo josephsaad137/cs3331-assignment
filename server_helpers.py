@@ -1,8 +1,21 @@
+from state_info import *
+
+# wrapper function for sending UDP segments from server to clientS
+def server_send(socket, msg):
+    pass
 
 def do_login(clientSocket):
     data = clientSocket.recv(1024)
     username = data.decode()
     print("[recv] " + username)
+
+    return_val = False
+
+    if username in ACTIVE_USERS:
+        message = "user already logged in"
+        print("[send] " + message)
+        clientSocket.sendall(message.encode())
+        return return_val
 
     # get a list of all the user credentials
     cred_file = open("credentials.txt", 'r')
@@ -27,6 +40,8 @@ def do_login(clientSocket):
 
         if password == expected_pw:
             message = "correct password"
+            ACTIVE_USERS.append(username)
+            return_val = username
         else:
             message = "incorrect password"
         print("[send] " + message)
@@ -44,6 +59,10 @@ def do_login(clientSocket):
         cred_file.write(username + " " + password + "\n")
         cred_file.close()
 
+        ACTIVE_USERS.append(username)
+        return_val = username
         message = "new user created"
         print("[send] " + message)
         clientSocket.sendall(message.encode())
+
+    return return_val

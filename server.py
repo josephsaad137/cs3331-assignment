@@ -2,6 +2,7 @@ from socket import *
 from threading import Thread
 import sys, select
 from server_helpers import do_login
+from state_info import *
 
 # acquire server host and port from command line parameter
 if len(sys.argv) != 2:
@@ -29,6 +30,7 @@ class ClientThread(Thread):
         self.clientAddress = clientAddress
         self.clientSocket = clientSocket
         self.clientAlive = False
+        self.clientName = None
         
         print("===== New connection created for: ", clientAddress)
         self.clientAlive = True
@@ -58,9 +60,10 @@ class ClientThread(Thread):
                 self.clientSocket.send(message.encode())
             else:
                 print("[recv] " + message)
-                print("[send] Cannot understand this message")
-                message = 'Cannot understand this message'
-                self.clientSocket.send(message.encode())
+                self.process_msg(message)
+
+                #message = 'Cannot understand this message'
+                #self.clientSocket.send(message.encode())
     
     """
         You can create more customized APIs here, e.g., logic for processing user authentication
@@ -70,9 +73,41 @@ class ClientThread(Thread):
             self.clientSocket.send(message.encode())
     """
     def process_login(self):
-        do_login(self.clientSocket)
+        username = do_login(self.clientSocket)
+        if username:
+            self.clientName = username
+    
+    def process_msg(self, msg):
+        words = msg.strip().split(" ")
+        cmd = words[0]
 
+        if cmd == "CRT":
+            pass
+        if cmd == "LST":
+            pass
+        if cmd == "MSG":
+            pass
+        if cmd == "DLT":
+            pass
+        if cmd == "RDT":
+            pass
+        if cmd == "EDT":
+            pass
+        if cmd == "UPD":
+            pass
+        if cmd == "DWN":
+            pass
+        if cmd == "RMV":
+            pass
+        if cmd == "XIT":
+            self.do_exit()
+    
+    def do_exit(self):
+        ACTIVE_USERS.remove(self.clientName)
 
+        message = "user has exited"
+        print("[send] " + message)
+        self.clientSocket.sendall(message.encode())
 
 print("\n===== Server is running =====")
 print("===== Waiting for connection request from clients...=====")

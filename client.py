@@ -1,5 +1,6 @@
 from socket import *
 import sys
+from client_helpers import check_cmd
 
 #Server would be running on the same host as Client
 if len(sys.argv) != 3:
@@ -51,7 +52,11 @@ while True:
 print("User authentication successful.")
 
 while True:
-    message = input("===== Please type any messsage you want to send to server: =====\n")
+    message = input("Please enter one of the following commands: CRT, MSG, DLT, EDT, LST, RDT, UPD, DWN, RMV, XIT: ")
+    err = check_cmd(message)
+    if err is not None:
+        print("ERROR: " + err)
+        continue
     clientSocket.sendall(message.encode())
 
     # receive response from the server
@@ -62,8 +67,9 @@ while True:
     # parse the message received from server and take corresponding actions
     if receivedMessage == "":
         print("[recv] Message from server is empty!")
-    elif receivedMessage == "user credentials request":
-        print("[recv] You need to provide username and password to login")
+    elif receivedMessage == "user has exited":
+        print("You have been logged off the server, goodbye!")
+        break
     elif receivedMessage == "download filename":
         print("[recv] You need to provide the file name you want to download")
     else:
