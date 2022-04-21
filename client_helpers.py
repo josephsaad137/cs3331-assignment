@@ -50,7 +50,7 @@ def cmd_handler(cmd, socket):
         elif msg == "message number not valid":
             print("ERROR: The given message number is not valid.")
         elif msg == "user not authorised":
-            print("ERROR: You are not authorised to edit the given message.")
+            print("ERROR: You are not authorised to delete the given message.")
         else:
             print("Message deleted.")
     if cmd == "EDT":
@@ -85,7 +85,13 @@ def cmd_handler(cmd, socket):
     if cmd == "DWN":
         pass
     if cmd == "RMV":
-        pass
+        msg, address = udp_recv(socket)
+        if msg == "thread does not exist":
+            print("ERROR: There is no thread with the given title.")
+        elif msg == "user not authorised":
+            print("ERROR: You are not authorised to delete the given thread.")
+        else:
+            print("Thread deleted.")
     if cmd == "XIT":
         msg, address = udp_recv(socket)
         if msg == "user has exited":

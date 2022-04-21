@@ -4,6 +4,7 @@ import sys, select
 from server_helpers import do_login
 from state_info import *
 from udp import udp_send, udp_recv
+from os import remove
 
 # acquire server host and port from command line parameter
 if len(sys.argv) != 2:
@@ -91,7 +92,7 @@ class ClientThread(Thread):
         if cmd == "DWN":
             pass
         if cmd == "RMV":
-            pass
+            self.do_remove(words[1])
         if cmd == "XIT":
             self.do_exit()
     
@@ -115,7 +116,8 @@ class ClientThread(Thread):
         details = {
             "msg_num": 1,
             "creator": self.clientName,
-            "msgs": {}
+            "msgs": {},
+            "files": []
         }
         THREADS[title] = details
 
@@ -229,6 +231,23 @@ class ClientThread(Thread):
         THREADS[title]["msg_num"] -= 1
         
         udp_send(serverSocket, "message deleted", self.clientAddress)
+
+    def do_remove(self, title):
+        if title not in THREADS.keys():
+            udp_send(serverSocket, "thread does not exist", self.clientAddress)
+            return
+        
+        if not self.clientName == THREADS[title]["creator"]:
+            udp_send(serverSocket, "user not authorised", self.clientAddress)
+            return
+
+        for filename in THREADS[title]["files"]:
+            remove(filename)
+        
+        remove(title)
+        THREADS.pop(title)
+
+        udp_send(serverSocket, "thread deleted", self.clientAddress)
 
 CLIENTS = {}
 THREADS = {}
