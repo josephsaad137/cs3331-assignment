@@ -3,6 +3,7 @@ from threading import Thread
 import sys, select
 from server_helpers import do_login
 from state_info import *
+from udp import udp_send, udp_recv
 
 # acquire server host and port from command line parameter
 if len(sys.argv) != 2:
@@ -13,7 +14,7 @@ serverPort = int(sys.argv[1])
 serverAddress = (serverHost, serverPort)
 
 # define socket for the server side and bind address
-serverSocket = socket(AF_INET, SOCK_STREAM)
+serverSocket = socket(AF_INET, SOCK_DGRAM)
 serverSocket.bind(serverAddress)
 
 """
@@ -25,46 +26,30 @@ serverSocket.bind(serverAddress)
     for client-2. Each client will be runing in a separate therad, which is the multi-threading
 """
 class ClientThread(Thread):
-    def __init__(self, clientAddress, clientSocket):
+    def __init__(self, clientAddress):
         Thread.__init__(self)
         self.clientAddress = clientAddress
-        self.clientSocket = clientSocket
+        #self.clientSocket = clientSocket
         self.clientAlive = False
         self.clientName = None
         
         print("===== New connection created for: ", clientAddress)
         self.clientAlive = True
         
-    def run(self):
-        message = ''
+    # def run(self):
+    #     message = ''
         
-        while self.clientAlive:
-            # use recv() to receive message from the client
-            data = self.clientSocket.recv(1024)
-            message = data.decode()
+    #     while self.clientAlive:
+    #         # use recv() to receive message from the client
+    #         data, address = serverSocket.recvfrom(1024)
+    #         message = data.decode()
             
-            # if the message from client is empty, the client would be off-line then set the client as offline (alive=Flase)
-            if message == '':
-                self.clientAlive = False
-                print("===== the user disconnected - ", clientAddress)
-                break
-            
-            # handle message from the client
-            if message == 'login':
-                print("[recv] New login request")
-                self.process_login()
-            elif message == 'download':
-                print("[recv] Download request")
-                message = 'download filename'
-                print("[send] " + message)
-                self.clientSocket.send(message.encode())
-            else:
-                print("[recv] " + message)
-                self.process_msg(message)
+    #         # if the message from client is empty, the client would be off-line then set the client as offline (alive=Flase)
+    #         if message == '':
+    #             self.clientAlive = False
+    #             print("===== the user disconnected - ", clientAddress)
+    #             break
 
-                #message = 'Cannot understand this message'
-                #self.clientSocket.send(message.encode())
-    
     """
         You can create more customized APIs here, e.g., logic for processing user authentication
         Each api can be used to handle one specific function, for example:
@@ -73,16 +58,22 @@ class ClientThread(Thread):
             self.clientSocket.send(message.encode())
     """
     def process_login(self):
-        username = do_login(self.clientSocket)
+        username = do_login(serverSocket)
         if username:
             self.clientName = username
     
     def process_msg(self, msg):
+        if msg == 'login':
+            print("[recv] New login request")
+            self.process_login()
+            return
+        
+        print("[recv] " + msg)
         words = msg.strip().split(" ")
         cmd = words[0]
 
         if cmd == "CRT":
-            pass
+            self.do_create(words[1])
         if cmd == "LST":
             pass
         if cmd == "MSG":
@@ -104,17 +95,42 @@ class ClientThread(Thread):
     
     def do_exit(self):
         ACTIVE_USERS.remove(self.clientName)
+        CLIENTS.pop(self.clientAddress)
 
         message = "user has exited"
         print("[send] " + message)
-        self.clientSocket.sendall(message.encode())
+        udp_send(serverSocket, message, self.clientAddress)
+    
+    def do_create(self, title):
+        if title in THREADS:
+            print("[send] thread already exists")
+            udp_send(serverSocket, 'thread already exists', self.clientAddress)
+            return
+        
+        f = open(title, 'w')
+        f.write(self.clientName + '\n')
+        f.close()
+        THREADS.append(title)
+
+        udp_send(serverSocket, 'thread created', self.clientAddress)
+
+CLIENTS = {}
+THREADS = []
 
 print("\n===== Server is running =====")
 print("===== Waiting for connection request from clients...=====")
 
 
 while True:
-    serverSocket.listen()
-    clientSockt, clientAddress = serverSocket.accept()
-    clientThread = ClientThread(clientAddress, clientSockt)
-    clientThread.start()
+    # serverSocket.listen()
+    # clientSockt, clientAddress = serverSocket.accept()
+    # clientThread = ClientThread(clientAddress, clientSockt)
+    # clientThread.start()
+    data, address = serverSocket.recvfrom(1024)
+    if address in CLIENTS:
+        CLIENTS[address].process_msg(data.decode())
+    else:
+        clientThread = ClientThread(address)
+        CLIENTS[address] = clientThread
+        clientThread.start()
+        clientThread.process_msg(data.decode())
