@@ -89,7 +89,13 @@ def cmd_handler(cmd, socket):
         else:
             return 'upload'
     if cmd == "DWN":
-        pass
+        msg, address = udp_recv(socket)
+        if msg == "thread does not exist":
+            print("ERROR: There is no thread with the given title.")
+        elif msg == "file does not exist":
+            print("ERROR: The given file has not been uploaded to the given thread.")
+        else:
+            return 'download'
     if cmd == "RMV":
         msg, address = udp_recv(socket)
         if msg == "thread does not exist":

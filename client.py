@@ -62,17 +62,36 @@ while True:
     if res == "upload":
         tcpSocket = socket(AF_INET, SOCK_STREAM)
         tcpSocket.connect(serverAddress)
+        
         words = message.strip().split(' ')
         filename = words[2]
         f = open(filename, 'rb')
         data = f.read()
         f.close()
+        
         tcpSocket.sendall(data)
         tcpSocket.close()
 
         msg, address = udp_recv(clientSocket)
         if msg == 'file uploaded':
             print("File uploaded.")
+    
+    if res == "download":
+        tcpSocket = socket(AF_INET, SOCK_STREAM)
+        tcpSocket.connect(serverAddress)
+
+        data = tcpSocket.recv(1024)
+        tcpSocket.close()
+
+        words = message.strip().split(' ')
+        filename = words[2]
+        f = open(filename, 'wb')
+        f.write(data)
+        f.close()
+
+        msg, address = udp_recv(clientSocket)
+        if msg == 'file downloaded':
+            print("File downloaded.")
     
     # if receivedMessage == "":
     #     print("[recv] Message from server is empty!")

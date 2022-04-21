@@ -90,7 +90,7 @@ class ClientThread(Thread):
         if cmd == "UPD":
             self.do_upload(words[1], words[2])
         if cmd == "DWN":
-            pass
+            self.do_download(words[1], words[2])
         if cmd == "RMV":
             self.do_remove(words[1])
         if cmd == "XIT":
@@ -279,6 +279,31 @@ class ClientThread(Thread):
         THREADS[title]["files"].append(filename)
 
         udp_send(serverSocket, "file uploaded", self.clientAddress)
+
+    def do_download(self, title, filename):
+        if title not in THREADS.keys():
+            udp_send(serverSocket, "thread does not exist", self.clientAddress)
+            return
+        
+        if filename not in THREADS[title]["files"]:
+            udp_send(serverSocket, "file does not exist", self.clientAddress)
+            return
+
+        f = open(title + '-' + filename, 'rb')
+        data = f.read()
+        f.close()
+
+        tcpSocket = socket(AF_INET, SOCK_STREAM)
+        tcpSocket.bind(serverAddress)
+        udp_send(serverSocket, "begin download", self.clientAddress)
+        tcpSocket.listen(1)
+        connectionSocket, address = tcpSocket.accept()
+
+        connectionSocket.sendall(data)
+        connectionSocket.close()
+        tcpSocket.close()
+
+        udp_send(serverSocket, "file downloaded", self.clientAddress)
 
 
 CLIENTS = {}
