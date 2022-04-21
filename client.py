@@ -1,6 +1,6 @@
 from socket import *
 import sys
-from client_helpers import check_cmd, check_response
+from client_helpers import check_cmd, cmd_handler
 from udp import udp_send, udp_recv
 
 #Server would be running on the same host as Client
@@ -51,22 +51,14 @@ print("User authentication successful.")
 
 while True:
     message = input("Please enter one of the following commands: CRT, MSG, DLT, EDT, LST, RDT, UPD, DWN, RMV, XIT: ")
-    err = check_cmd(message)
+    err, cmd = check_cmd(message)
     if err is not None:
         print("ERROR: " + err)
         continue
     udp_send(clientSocket, message, serverAddress)
-
-    # receive response from the server
-    # 1024 is a suggested packet size, you can specify it as 2048 or others
-    receivedMessage, address = udp_recv(clientSocket)
-
-    # parse the message received from server and take corresponding actions
-    res, msg = check_response(receivedMessage)
+    res = cmd_handler(cmd, clientSocket)
     if res == "exit":
         break
-    if res == "print":
-        print(msg)
     
     # if receivedMessage == "":
     #     print("[recv] Message from server is empty!")

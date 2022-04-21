@@ -1,4 +1,4 @@
-
+# wrapper functions for reliable UDP transmission using sendto() and recvfrom().
 
 def udp_send(socket, msg, dest):
     socket.sendto(msg.encode(), dest)

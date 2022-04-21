@@ -75,7 +75,7 @@ class ClientThread(Thread):
         if cmd == "CRT":
             self.do_create(words[1])
         if cmd == "LST":
-            pass
+            self.do_list()
         if cmd == "MSG":
             pass
         if cmd == "DLT":
@@ -113,6 +113,15 @@ class ClientThread(Thread):
         THREADS.append(title)
 
         udp_send(serverSocket, 'thread created', self.clientAddress)
+    
+    def do_list(self):
+        if not THREADS:
+            udp_send(serverSocket, 'no active threads', self.clientAddress)
+            return
+        
+        threads = ' '.join(THREADS)
+        udp_send(serverSocket, threads, self.clientAddress)
+
 
 CLIENTS = {}
 THREADS = []

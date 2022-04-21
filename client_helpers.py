@@ -1,8 +1,10 @@
+from udp import udp_send, udp_recv
+
 def check_cmd(msg):
     words = msg.strip().split(" ")
 
     if len(words) == 0:
-        return "No command entered."
+        return "No command entered.", None
 
     cmd = words[0]
     args = len(words)
@@ -22,13 +24,44 @@ def check_cmd(msg):
     else:
         err = "Command does not exist."
 
-    return err
+    return err, cmd
 
-def check_response(msg):
-    if msg == "user has exited":
-        return "exit", " "
-    if msg == "thread already exists":
-        return "print", "ERROR: The thread with the given title already exists."
+def cmd_handler(cmd, socket):
+    if cmd == "CRT":
+        msg, address = udp_recv(socket)
+        if msg == "thread already exists":
+            print("ERROR: A thread with the given title already exists.")
+        else:
+            print("New thread created.")
 
+    if cmd == "MSG":
+        pass
+    if cmd == "DLT":
+        pass
+    if cmd == "EDT":
+        pass
+    if cmd == "LST":
+        msg, address = udp_recv(socket)
+        if msg == "no active threads":
+            print("There are currently no active threads.")
+            return
+        else:
+            threads = msg.split(' ')
+            print("Active threads:")
+            for title in threads:
+                print(title)
 
-    return " ", " "
+    if cmd == "RDT":
+        pass
+    if cmd == "UPD":
+        pass
+    if cmd == "DWN":
+        pass
+    if cmd == "RMV":
+        pass
+    if cmd == "XIT":
+        msg, address = udp_recv(socket)
+        if msg == "user has exited":
+            print("You have been logged off the server, goodbye!")
+        return "exit"
+
