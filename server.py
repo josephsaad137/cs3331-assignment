@@ -77,7 +77,8 @@ class ClientThread(Thread):
         if cmd == "LST":
             self.do_list()
         if cmd == "MSG":
-            pass
+            msg = ' '.join(words[2:])
+            self.do_msg(words[1], msg)
         if cmd == "DLT":
             pass
         if cmd == "RDT":
@@ -110,7 +111,12 @@ class ClientThread(Thread):
         f = open(title, 'w')
         f.write(self.clientName + '\n')
         f.close()
-        THREADS.append(title)
+        details = {
+            "msg_num": 1,
+            "num_msgs": 0,
+            "creator": self.clientName
+        }
+        THREADS[title] = details
 
         udp_send(serverSocket, 'thread created', self.clientAddress)
     
@@ -119,12 +125,25 @@ class ClientThread(Thread):
             udp_send(serverSocket, 'no active threads', self.clientAddress)
             return
         
-        threads = ' '.join(THREADS)
+        threads = ' '.join(THREADS.keys())
         udp_send(serverSocket, threads, self.clientAddress)
+    
+    def do_msg(self, title, msg):
+        if title not in THREADS.keys():
+            udp_send(serverSocket, "thread does not exist", self.clientAddress)
+            return
+        
+        f = open(title, 'a')
+        msg_num = THREADS[title]["msg_num"]
+        f.write(str(msg_num) + " " + self.clientName + ": " + msg + "\n")
+        f.close()
+        THREADS[title]["msg_num"] += 1
+        THREADS[title]["num_msgs"] += 1
+        udp_send(serverSocket, "message sent", self.clientAddress)
 
 
 CLIENTS = {}
-THREADS = []
+THREADS = {}
 
 print("\n===== Server is running =====")
 print("===== Waiting for connection request from clients...=====")

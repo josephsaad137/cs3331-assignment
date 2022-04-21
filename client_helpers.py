@@ -15,12 +15,15 @@ def check_cmd(msg):
     elif cmd in ["CRT","RDT","RMV"]:                # one arg
         if not args == 2:
             err = "Incorrect number of arguments."
-    elif cmd in ["MSG","DLT","UPD","DWN"]:          # two args
+    elif cmd in ["DLT","UPD","DWN"]:          # two args
         if not args == 3:
             err = "Incorrect number of arguments."
     elif cmd == "EDT":                              # three args
         if not args == 4:
             err = "Incorrect number of arguments."
+    elif cmd == "MSG":
+        if args < 3:
+            err = "Insufficient number of arguments."
     else:
         err = "Command does not exist."
 
@@ -35,7 +38,11 @@ def cmd_handler(cmd, socket):
             print("New thread created.")
 
     if cmd == "MSG":
-        pass
+        msg, address = udp_recv(socket)
+        if msg == "thread does not exist":
+            print("ERROR: There is no thread with the given title.")
+        else:
+            print("Message sent to thread.")
     if cmd == "DLT":
         pass
     if cmd == "EDT":
