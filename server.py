@@ -84,7 +84,8 @@ class ClientThread(Thread):
         if cmd == "RDT":
             self.do_read(words[1])
         if cmd == "EDT":
-            pass
+            msg = ' '.join(words[3:])
+            self.do_edit(words[1], words[2], msg)
         if cmd == "UPD":
             pass
         if cmd == "DWN":
@@ -114,7 +115,8 @@ class ClientThread(Thread):
         details = {
             "msg_num": 1,
             "num_msgs": 0,
-            "creator": self.clientName
+            "creator": self.clientName,
+            "msgs": {}
         }
         THREADS[title] = details
 
@@ -137,6 +139,10 @@ class ClientThread(Thread):
         msg_num = THREADS[title]["msg_num"]
         f.write(str(msg_num) + " " + self.clientName + ": " + msg + "\n")
         f.close()
+        THREADS[title]["msgs"][msg_num] = {
+            "msg": msg,
+            "author": self.clientName
+        }
         THREADS[title]["msg_num"] += 1
         THREADS[title]["num_msgs"] += 1
         udp_send(serverSocket, "message sent", self.clientAddress)
@@ -151,6 +157,33 @@ class ClientThread(Thread):
         contents = f.read()
         f.close()
         udp_send(serverSocket, contents, self.clientAddress)
+    
+    def do_edit(self, title, msg_num, msg):
+        if title not in THREADS.keys():
+            udp_send(serverSocket, "thread does not exist", self.clientAddress)
+            return
+        
+        if not int(msg_num) in THREADS[title]["msgs"].keys():
+            udp_send(serverSocket, "message number not valid", self.clientAddress)
+            return
+
+        if not self.clientName == THREADS[title]["msgs"][int(msg_num)]["author"]:
+            udp_send(serverSocket, "user not authorised", self.clientAddress)
+            return
+        
+        f = open(title, 'r')
+        contents = f.read()
+        f.close()
+        og_msg = msg_num + " " + self.clientName + ": " + THREADS[title]["msgs"][int(msg_num)]["msg"] + "\n"
+        new_msg = msg_num + " " + self.clientName + ": " + msg + "\n"
+        contents = contents.replace(og_msg, new_msg)
+        f = open(title, 'w')
+        f.write(contents)
+        f.close()
+
+        THREADS[title]["msgs"][int(msg_num)]["msg"] = msg
+        udp_send(serverSocket, "message edited", self.clientAddress)
+
 
 CLIENTS = {}
 THREADS = {}
