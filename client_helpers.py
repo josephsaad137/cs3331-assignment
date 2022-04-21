@@ -59,7 +59,11 @@ def cmd_handler(cmd, socket):
                 print(title)
 
     if cmd == "RDT":
-        pass
+        msg, address = udp_recv(socket)
+        if msg == "thread does not exist":
+            print("ERROR: There is no thread with the given title.")
+        else:
+            print(msg)
     if cmd == "UPD":
         pass
     if cmd == "DWN":

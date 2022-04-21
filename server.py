@@ -82,7 +82,7 @@ class ClientThread(Thread):
         if cmd == "DLT":
             pass
         if cmd == "RDT":
-            pass
+            self.do_read(words[1])
         if cmd == "EDT":
             pass
         if cmd == "UPD":
@@ -141,6 +141,16 @@ class ClientThread(Thread):
         THREADS[title]["num_msgs"] += 1
         udp_send(serverSocket, "message sent", self.clientAddress)
 
+    def do_read(self, title):
+        if title not in THREADS.keys():
+            udp_send(serverSocket, "thread does not exist", self.clientAddress)
+            return
+        
+        f = open(title, 'r')
+        f.readline()
+        contents = f.read()
+        f.close()
+        udp_send(serverSocket, contents, self.clientAddress)
 
 CLIENTS = {}
 THREADS = {}
