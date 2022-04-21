@@ -80,7 +80,7 @@ class ClientThread(Thread):
             msg = ' '.join(words[2:])
             self.do_msg(words[1], msg)
         if cmd == "DLT":
-            pass
+            self.do_delete(words[1], words[2])
         if cmd == "RDT":
             self.do_read(words[1])
         if cmd == "EDT":
@@ -114,7 +114,6 @@ class ClientThread(Thread):
         f.close()
         details = {
             "msg_num": 1,
-            "num_msgs": 0,
             "creator": self.clientName,
             "msgs": {}
         }
@@ -144,7 +143,6 @@ class ClientThread(Thread):
             "author": self.clientName
         }
         THREADS[title]["msg_num"] += 1
-        THREADS[title]["num_msgs"] += 1
         udp_send(serverSocket, "message sent", self.clientAddress)
 
     def do_read(self, title):
@@ -184,6 +182,53 @@ class ClientThread(Thread):
         THREADS[title]["msgs"][int(msg_num)]["msg"] = msg
         udp_send(serverSocket, "message edited", self.clientAddress)
 
+    def do_delete(self, title, msg_num):
+        if title not in THREADS.keys():
+            udp_send(serverSocket, "thread does not exist", self.clientAddress)
+            return
+        
+        if not int(msg_num) in THREADS[title]["msgs"].keys():
+            udp_send(serverSocket, "message number not valid", self.clientAddress)
+            return
+
+        if not self.clientName == THREADS[title]["msgs"][int(msg_num)]["author"]:
+            udp_send(serverSocket, "user not authorised", self.clientAddress)
+            return
+        
+        f = open(title, 'r')
+        contents = f.readlines()
+        f.close()
+        new_contents = ""
+        msg_reached = False
+        for i in range(0, len(contents) - 1):
+            if contents[i].split(' ')[0] == msg_num:
+                msg_reached = True
+            
+            if not msg_reached:
+                new_contents = new_contents + contents[i]
+            else:
+                temp = contents[i + 1].split(' ')
+                num = 0
+                try:
+                    num = int(temp[0])
+                except:
+                    pass
+                if not num == 0:
+                    new_line = str(int(temp[0]) - 1) + ' ' + ' '.join(temp[1:])
+                    new_contents = new_contents + new_line
+                else:
+                    new_contents = new_contents + contents[i + 1]
+        
+        f = open(title, 'w')
+        f.write(new_contents)
+        f.close()
+
+        for i in range(int(msg_num), THREADS[title]["msg_num"] - 2):
+            THREADS[title]["msgs"][i] = THREADS[title]["msgs"][i + 1]
+        THREADS[title]["msgs"].pop(THREADS[title]["msg_num"] - 1)
+        THREADS[title]["msg_num"] -= 1
+        
+        udp_send(serverSocket, "message deleted", self.clientAddress)
 
 CLIENTS = {}
 THREADS = {}

@@ -44,7 +44,15 @@ def cmd_handler(cmd, socket):
         else:
             print("Message sent to thread.")
     if cmd == "DLT":
-        pass
+        msg, address = udp_recv(socket)
+        if msg == "thread does not exist":
+            print("ERROR: There is no thread with the given title.")
+        elif msg == "message number not valid":
+            print("ERROR: The given message number is not valid.")
+        elif msg == "user not authorised":
+            print("ERROR: You are not authorised to edit the given message.")
+        else:
+            print("Message deleted.")
     if cmd == "EDT":
         msg, address = udp_recv(socket)
         if msg == "thread does not exist":
