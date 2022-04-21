@@ -88,7 +88,7 @@ class ClientThread(Thread):
             msg = ' '.join(words[3:])
             self.do_edit(words[1], words[2], msg)
         if cmd == "UPD":
-            pass
+            self.do_upload(words[1], words[2])
         if cmd == "DWN":
             pass
         if cmd == "RMV":
@@ -248,6 +248,38 @@ class ClientThread(Thread):
         THREADS.pop(title)
 
         udp_send(serverSocket, "thread deleted", self.clientAddress)
+    
+    def do_upload(self, title, filename):
+        if title not in THREADS.keys():
+            udp_send(serverSocket, "thread does not exist", self.clientAddress)
+            return
+        
+        if title in THREADS[title]["files"]:
+            udp_send(serverSocket, "file already exists", self.clientAddress)
+            return
+        
+        tcpSocket = socket(AF_INET, SOCK_STREAM)
+        tcpSocket.bind(serverAddress)
+        udp_send(serverSocket, "begin upload", self.clientAddress)
+        tcpSocket.listen(1)
+        connectionSocket, address = tcpSocket.accept()
+
+        data = connectionSocket.recv(1024)
+        connectionSocket.close()
+        tcpSocket.close()
+        
+        f = open(title + "-" + filename, "wb")
+        f.write(data)
+        f.close()
+
+        f = open(title, 'a')
+        f.write(self.clientName + " uploaded " + filename + "\n")
+        f.close()
+
+        THREADS[title]["files"].append(filename)
+
+        udp_send(serverSocket, "file uploaded", self.clientAddress)
+
 
 CLIENTS = {}
 THREADS = {}

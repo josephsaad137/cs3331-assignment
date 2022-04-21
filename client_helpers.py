@@ -81,7 +81,13 @@ def cmd_handler(cmd, socket):
         else:
             print(msg)
     if cmd == "UPD":
-        pass
+        msg, address = udp_recv(socket)
+        if msg == "thread does not exist":
+            print("ERROR: There is no thread with the given title.")
+        elif msg == "file already exists":
+            print("ERROR: The given file has already been uploaded to the given thread.")
+        else:
+            return 'upload'
     if cmd == "DWN":
         pass
     if cmd == "RMV":
